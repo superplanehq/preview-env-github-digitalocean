@@ -1,0 +1,108 @@
+apiVersion: v1
+kind: Console
+metadata:
+  canvasId: 18c74e35-1d76-41b9-825c-b68ef966cd3f
+  name: Preview Environments for GitHub and GC (deleted-1779999964)
+spec:
+  panels:
+    - id: header
+      type: markdown
+      content:
+        body: >
+          ## storejs Preview Environments
+
+
+          Spin up ephemeral DigitalOcean droplets for pull requests by commenting on a PR.
+
+
+          | Command | Action |
+
+          | --- | --- |
+
+          | `/start` | Spin up a preview environment for the PR |
+
+          | `/destroy` | Tear down the preview environment |
+
+
+          Environments **auto-expire after 24 hours** (checked hourly) and are destroyed automatically when the PR is
+          closed or merged.
+        title: Preview Environments
+    - id: envs-table
+      type: table
+      content:
+        dataSource:
+          kind: memory
+          namespace: preview-envs
+        render:
+          columns:
+            - field: pr_number
+              format: badge
+              label: PR
+            - field: pr_title
+              format: text
+              label: Title
+            - field: url
+              format: link
+              href: '{{ url }}'
+              label: Preview URL
+            - field: requested_by
+              format: text
+              label: Requested By
+            - field: created_at
+              format: relative
+              label: Created
+            - field: droplet_url
+              format: link
+              href: '{{ droplet_url }}'
+              label: Droplet
+          kind: table
+          rowActions:
+            - confirm: 'Destroy preview environment for PR #{{ pr_number }}?'
+              icon: trash
+              kind: trigger
+              label: Destroy
+              node: console-destroy
+              payload:
+                issue_number: '{{ pr_number }}'
+              template: destroy
+              variant: danger
+        title: Active Preview Environments
+    - id: age-chart
+      type: chart
+      content:
+        dataSource:
+          kind: memory
+          namespace: preview-envs
+        render:
+          kind: chart
+          legend: hide
+          series:
+            - field: '{{ (now - int(created_at)) / 3600 }}'
+              format: number
+              label: Age (hours)
+              suffix: h
+          type: bar
+          xField: pr_number
+        title: Environment Age (hours)
+  layout:
+    - i: header
+      x: 0
+      'y': 8
+      w: 6
+      h: 6
+      minW: 2
+      minH: 2
+    - i: envs-table
+      x: 0
+      'y': 0
+      w: 12
+      h: 8
+      minW: 4
+      minH: 4
+    - i: age-chart
+      x: 6
+      'y': 8
+      w: 6
+      h: 6
+      minW: 4
+      minH: 4
